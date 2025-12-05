@@ -173,13 +173,19 @@
         android:foregroundServiceType="dataSync"/>
 
     <service
-        android:exported="false"
+        android:exported="true"
         android:name=".service.AudioService"
         android:foregroundServiceType="mediaPlayback">
       <intent-filter>
         <action android:name="android.intent.action.MEDIA_BUTTON"/>
+        <action android:name="androidx.media3.session.MediaLibraryService"/>
+        <action android:name="android.media.browse.MediaBrowserService"/>
       </intent-filter>
     </service>
+
+    <service
+        android:name="com.quran.labs.feature.autoquran.service.QuranBrowsableAudioPlaybackService"
+        tools:node="remove" />
 
     <service
         android:name=".widget.BookmarksWidgetService"

@@ -20,6 +20,7 @@ import com.quran.labs.androidquran.di.module.widgets.BookmarksWidgetUpdaterModul
 import com.quran.labs.androidquran.pageselect.PageSelectActivity
 import com.quran.labs.androidquran.service.AudioService
 import com.quran.labs.androidquran.service.QuranDownloadService
+import com.quran.labs.androidquran.service.AudioServiceDependencyHolder
 import com.quran.labs.androidquran.ui.TranslationManagerActivity
 import com.quran.labs.androidquran.ui.fragment.AddTagDialog
 import com.quran.labs.androidquran.ui.fragment.BookmarksFragment
@@ -63,7 +64,9 @@ interface ApplicationComponent : QuranApplicationComponent {
   fun inject(quranDataProvider: QuranDataProvider)
 
   // services
-  fun inject(audioService: AudioService)
+  fun inject(holder: AudioService)
+  fun inject(holder: AudioServiceDependencyHolder)
+
   fun inject(quranDownloadService: QuranDownloadService)
 
   // activities
