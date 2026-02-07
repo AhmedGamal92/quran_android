@@ -2,7 +2,6 @@ package com.quran.labs.androidquran.service
 
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,7 +10,6 @@ import android.graphics.Canvas
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Process
@@ -81,7 +79,6 @@ import kotlin.math.abs
  * the service to perform specific operations: Play, Pause, Rewind, Skip, etc.
  */
 class AudioService : MediaLibraryService(), Player.Listener {
-
 
   private var mediaLibrarySession: MediaLibrarySession? = null
 
@@ -572,7 +569,7 @@ class AudioService : MediaLibraryService(), Player.Listener {
     }
   }
 
-  private fun processPlayRequest() {
+  internal fun processPlayRequest() {
     val localAudioRequest = audioRequest
     val localAudioQueue = audioQueue
     if (localAudioRequest == null || localAudioQueue == null) {
@@ -1304,22 +1301,23 @@ class AudioService : MediaLibraryService(), Player.Listener {
   }
 
   override fun onDestroy() {
+    Timber.i("debug: destroying the service")
+    // Service is being killed, so make sure we release our resources
+    compositeDisposable.clear()
+    state = State.Stopped
+    relaxResources(true, true)
+    mediaSession.release()
+    timingRepository.clear()
+    scope.cancel()
     serviceHandler.post {
       mediaLibrarySession?.run {
         player.release()
         release()
         mediaLibrarySession = null
       }
+      serviceHandler.removeCallbacksAndMessages(null)
+      serviceLooper.quitSafely()
     }
-    compositeDisposable.clear()
-    // Service is being killed, so make sure we release our resources
-    serviceHandler.removeCallbacksAndMessages(null)
-    serviceLooper.quitSafely()
-    state = State.Stopped
-    relaxResources(true, true)
-    mediaSession.release()
-    timingRepository.clear()
-    scope.cancel()
     super.onDestroy()
   }
 

@@ -7,6 +7,9 @@ import com.quran.data.core.QuranInfo
 import com.quran.data.model.SuraAyah
 import com.quran.data.model.audio.Qari
 import com.quran.labs.androidquran.common.audio.model.QariItem
+import com.quran.labs.androidquran.common.audio.model.playback.AudioPathInfo
+import com.quran.labs.androidquran.common.audio.model.playback.AudioRequest
+import com.quran.labs.androidquran.common.audio.util.AudioExtensionDecider
 import com.quran.labs.androidquran.common.audio.util.QariUtil
 import com.quran.labs.androidquran.service.AudioService
 import dev.zacsweers.metro.Inject
@@ -17,7 +20,8 @@ import java.util.Locale
 class AudioUtils @Inject constructor(
   private val quranInfo: QuranInfo,
   private val quranFileUtils: QuranFileUtils,
-  private val qariUtil: QariUtil
+  private val qariUtil: QariUtil,
+  private val audioExtensionDecider: AudioExtensionDecider,
 ) {
 
   private val totalPages = quranInfo.numberOfPages
@@ -296,6 +300,85 @@ class AudioUtils @Inject constructor(
     return Intent(context, AudioService::class.java).apply {
       setAction(action)
     }
+  }
+
+  fun getLocalAudioPathInfo(qari: QariItem): AudioPathInfo? {
+    val localPath = getLocalQariUrl(qari)
+    if (localPath != null) {
+      val databasePath = getQariDatabasePathIfGapless(qari)
+      val extension = audioExtensionDecider.audioExtensionForQari(qari)
+      val urlFormat = if (databasePath.isNullOrEmpty()) {
+        localPath + File.separator + "%d" + File.separator + "%d" + ".$extension"
+      } else {
+        localPath + File.separator + "%03d" + ".$extension"
+      }
+      return AudioPathInfo(
+        urlFormat, localPath, databasePath,
+        audioExtensionDecider.allowedAudioExtensions(qari)
+      )
+    }
+    return null
+  }
+
+  fun createAudioRequest(
+    start: SuraAyah,
+    end: SuraAyah,
+    qari: QariItem,
+    verseRepeat: Int = 0,
+    rangeRepeat: Int = 0,
+    enforceRange: Boolean,
+    playbackSpeed: Float = 1f,
+    shouldStream: Boolean
+  ): AudioRequest? {
+    val audioPathInfo = getLocalAudioPathInfo(qari)
+    if (audioPathInfo != null) {
+      // override streaming if all the files are already downloaded
+      val stream = shouldStream && !haveAllFiles(
+        baseUrl = audioPathInfo.urlFormat,
+        path = audioPathInfo.localDirectory,
+        start = start,
+        end = end,
+        isGapless = audioPathInfo.gaplessDatabase != null,
+        allowedExtensions = audioPathInfo.allowedExtensions
+      )
+
+      // if we're still streaming, change the base qari format in audioPathInfo
+      // to a remote url format (instead of a path to a local directory)
+      val audioPath = if (stream) {
+        audioPathInfo.copy(
+          urlFormat = getQariUrl(
+            qari,
+            audioExtensionDecider.audioExtensionForQari(qari)
+          )
+        )
+      } else {
+        audioPathInfo
+      }
+
+      val (actualStart, actualEnd) = if (start <= end) {
+        start to end
+      } else {
+        Timber.e(
+          IllegalStateException(
+            "End isn't larger than the start: $start to $end"
+          )
+        )
+        end to start
+      }
+
+      return AudioRequest(
+        start = actualStart,
+        end = actualEnd,
+        qari = qari,
+        repeatInfo = verseRepeat,
+        rangeRepeatInfo = rangeRepeat,
+        enforceBounds = enforceRange,
+        playbackSpeed = playbackSpeed,
+        shouldStream = stream,
+        audioPathInfo = audioPath
+      )
+    }
+    return null
   }
 
   companion object {

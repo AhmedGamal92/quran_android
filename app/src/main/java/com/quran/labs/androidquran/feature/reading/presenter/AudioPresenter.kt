@@ -40,52 +40,16 @@ constructor(
     playbackSpeed: Float,
     shouldStream: Boolean
   ) {
-    val audioPathInfo = getLocalAudioPathInfo(qari)
-    if (audioPathInfo != null) {
-      // override streaming if all the files are already downloaded
-      val stream = if (shouldStream) {
-        !haveAllFiles(audioPathInfo, start, end)
-      } else {
-        false
-      }
-
-      // if we're still streaming, change the base qari format in audioPathInfo
-      // to a remote url format (instead of a path to a local directory)
-      val audioPath = if (stream) {
-        audioPathInfo.copy(
-          urlFormat = audioUtil.getQariUrl(
-            qari,
-            audioExtensionDecider.audioExtensionForQari(qari)
-          )
-        )
-      } else {
-        audioPathInfo
-      }
-
-      val (actualStart, actualEnd) = if (start <= end) {
-        start to end
-      } else {
-        Timber.e(
-          IllegalStateException(
-            "End isn't larger than the start: $start to $end"
-          )
-        )
-        end to start
-      }
-
-      val audioRequest = AudioRequest(
-        actualStart,
-        actualEnd,
-        qari,
-        verseRepeat,
-        rangeRepeat,
-        enforceRange,
-        playbackSpeed,
-        stream,
-        audioPath
-      )
-      play(audioRequest)
-    }
+    audioUtil.createAudioRequest(
+      start = start,
+      end = end,
+      qari = qari,
+      verseRepeat = verseRepeat,
+      rangeRepeat = rangeRepeat,
+      enforceRange = enforceRange,
+      playbackSpeed = playbackSpeed,
+      shouldStream = shouldStream
+    )?.let { play(it) }
   }
 
   private fun play(audioRequest: AudioRequest) {
@@ -191,26 +155,6 @@ constructor(
     title: String
   ): Intent {
     return ServiceIntentHelper.getAudioDownloadIntent(context, url, destination, title)
-  }
-
-  private fun getLocalAudioPathInfo(qari: QariItem): AudioPathInfo? {
-    pagerActivity?.let {
-      val localPath = audioUtil.getLocalQariUrl(qari)
-      if (localPath != null) {
-        val databasePath = audioUtil.getQariDatabasePathIfGapless(qari)
-        val extension = audioExtensionDecider.audioExtensionForQari(qari)
-        val urlFormat = if (databasePath.isNullOrEmpty()) {
-          localPath + File.separator + "%d" + File.separator + "%d" + ".$extension"
-        } else {
-          localPath + File.separator + "%03d" + ".$extension"
-        }
-        return AudioPathInfo(
-          urlFormat, localPath, databasePath,
-          audioExtensionDecider.allowedAudioExtensions(qari)
-        )
-      }
-    }
-    return null
   }
 
   private fun haveAllFiles(audioPathInfo: AudioPathInfo, start: SuraAyah, end: SuraAyah): Boolean {
