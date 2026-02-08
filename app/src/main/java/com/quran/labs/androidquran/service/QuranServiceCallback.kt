@@ -154,13 +154,8 @@ class QuranServiceCallback @AssistedInject constructor(
                    end = SuraAyah(sura, quranInfo.getNumberOfAyahs(sura)),
                    qari = qari,
                    enforceRange = true,
-                   shouldStream = quranSettings.shouldStream()
+                   shouldStream = true
                  ) ?: return@launch // should we fallback ?
-
-//                 service.audioRequest = request
-//                 service.audioQueue = AudioQueue(quranInfo, request, AudioPlaybackInfo(request.start, 1, 1, request.start.requiresBasmallah()))
-////                 // Start playback
-//                 service.processPlayRequest()
 
                  Timber.i("Starting service for audio playback request: %s", request)
                  val intent = Intent(service, AudioService::class.java)
