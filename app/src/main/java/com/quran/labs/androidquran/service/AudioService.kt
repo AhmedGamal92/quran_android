@@ -260,22 +260,27 @@ class AudioService : MediaLibraryService(), Player.Listener {
 
   private inner class MediaSessionCallback : MediaSessionCompat.Callback() {
     override fun onPlay() {
+      Timber.d("MediaSessionCallback onPlay")
       processPlayRequest()
     }
 
     override fun onSkipToNext() {
+      Timber.d("MediaSessionCallback onSkipToNext")
       processSkipRequest()
     }
 
     override fun onSkipToPrevious() {
+      Timber.d("MediaSessionCallback onSkipToPrevious")
       processRewindRequest()
     }
 
     override fun onPause() {
+      Timber.d("MediaSessionCallback onPause")
       processPauseRequest()
     }
 
     override fun onStop() {
+      Timber.d("MediaSessionCallback onStop")
       processStopRequest()
     }
   }

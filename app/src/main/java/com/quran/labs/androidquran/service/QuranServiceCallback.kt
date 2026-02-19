@@ -33,7 +33,6 @@ class QuranServiceCallback @AssistedInject constructor(
   private val surahBuilder: BrowsableSurahBuilder,
   private val audioUtils: AudioUtils,
   private val quranInfo: QuranInfo,
-  private val quranSettings: QuranSettings
 ) : MediaLibraryService.MediaLibrarySession.Callback {
 
   private val rootMediaItem: MediaItem by lazy {
@@ -66,7 +65,7 @@ class QuranServiceCallback @AssistedInject constructor(
       putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
       putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM)
     }
-    val libraryParams = MediaLibraryService.LibraryParams.Builder().setExtras(rootExtras).build()
+    val libraryParams = MediaLibraryService.LibraryParams.Builder().setRecent(true).setExtras(rootExtras).build()
     return Futures.immediateFuture(LibraryResult.ofItem(rootMediaItem, libraryParams))
   }
 
@@ -77,7 +76,7 @@ class QuranServiceCallback @AssistedInject constructor(
   ): ListenableFuture<LibraryResult<MediaItem>> {
     Timber.d("onGetItem called with mediaId: %s", mediaId)
     val settable = SettableFuture.create<LibraryResult<MediaItem>>()
-    MainScope().launch {
+    scope.launch {
       val item = surahBuilder.child(mediaId)
       val result = if (item == null) {
         Timber.w("onGetItem: No item found for mediaId: %s", mediaId)
@@ -250,4 +249,21 @@ class QuranServiceCallback @AssistedInject constructor(
       connectionResult.availablePlayerCommands
     )
   }
+
+  override fun onPlaybackResumption(
+    mediaSession: MediaSession,
+    controller: MediaSession.ControllerInfo,
+    isForPlayback: Boolean
+  ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+    Timber.d("onPlaybackResumption from controller: %s", controller.packageName)
+
+    val settable = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+scope.launch {
+   surahBuilder.child("sura_0_1")?.let {
+     settable.set(MediaSession.MediaItemsWithStartPosition(listOf(it), 0, 0))
+  }
+}
+    return settable
+  }
+
 }

@@ -42,7 +42,6 @@ class BrowsableSurahBuilder @Inject constructor(
       } else if (parentId == QARI_ID) {
         val items = pageProvider.getQaris()
           .filter { it.isGapless }
-          .take(2)
           .map { qari -> makeMediaItem(qari) }
         ImmutableList.copyOf(items)
       } else {
@@ -123,6 +122,7 @@ class BrowsableSurahBuilder @Inject constructor(
         MediaMetadata.Builder()
           .setTitle(appContext.getString(qari.nameResource))
           .setIsBrowsable(true)
+//          .maybeSetArtworkData()
           .setMediaType(MediaMetadata.MEDIA_TYPE_ARTIST)
           .setIsPlayable(false)
           .build()
